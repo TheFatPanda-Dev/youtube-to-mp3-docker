@@ -5,12 +5,14 @@ Thank you for your interest in contributing! This project welcomes contributions
 ## Development Setup
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/youtube-downloader.git
    cd youtube-downloader
    ```
 
 2. Build and run locally:
+
    ```bash
    docker-compose up --build
    ```
@@ -20,6 +22,7 @@ Thank you for your interest in contributing! This project welcomes contributions
 ## Making Changes
 
 1. Create a feature branch:
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -27,6 +30,7 @@ Thank you for your interest in contributing! This project welcomes contributions
 2. Make your changes and test them locally
 
 3. Commit your changes:
+
    ```bash
    git commit -m "Add your descriptive commit message"
    ```
@@ -49,6 +53,7 @@ Thank you for your interest in contributing! This project welcomes contributions
 ## Reporting Issues
 
 When reporting issues, please include:
+
 - Operating system and version
 - Docker version
 - Steps to reproduce the issue

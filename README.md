@@ -13,24 +13,56 @@ A web-based YouTube to MP3 downloader that runs in a Docker container, perfect f
 - 📂 Browse and download previous files
 - 🔄 Background downloading with status updates
 
-## Quick Start for Synology
+## Deployment Options
 
-**For Synology Deployment:**
+### Method 1: Docker Compose (Recommended)
+
 ```bash
 # Create the download directory first
-sudo mkdir -p "/volume1/Torrents/Youtube Downloads"
+mkdir -p "/path/to/your/downloads"
 
-# Upload the entire youtube-downloader folder to your Synology
-# Then SSH into your Synology and run:
-cd /volume1/docker/youtube-downloader/
-sudo docker-compose up -d --build
+# Clone or upload the project files
+git clone https://github.com/YOUR_USERNAME/youtube-downloader.git
+cd youtube-downloader
+
+# Start the container
+docker-compose up -d --build
 ```
 
-### Method 2: Using Synology Docker GUI
+### Method 2: Portainer Stack Deployment
+
+1. **In Portainer:**
+   - Go to **Stacks** → **Add Stack**
+   - Name: `youtube-downloader`
+   - Paste the following stack configuration:
+
+```yaml
+version: "3.8"
+services:
+  youtube-downloader:
+    build: .
+    ports:
+      - "7843:5000"
+    volumes:
+      - /path/to/your/downloads:/app/downloads
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped
+```
+
+2. **Configure volume mapping:**
+   - Replace `/path/to/your/downloads` with your desired download directory
+   - Examples:
+     - Synology: `/volume1/docker/downloads/youtube`
+     - Linux: `/home/user/downloads/youtube`
+     - Windows: `C:\Downloads\YouTube`
+
+### Method 3: Synology Docker GUI
 
 1. **Build the image first via SSH:**
+
    ```bash
-   cd /volume1/docker/youtube-downloader/
+   cd /path/to/youtube-downloader/
    sudo docker build -t youtube-downloader .
    ```
 
@@ -39,7 +71,7 @@ sudo docker-compose up -d --build
    - Configure container:
      - **Container Name:** `youtube-downloader`
      - **Port:** Local `7843` → Container `5000`
-     - **Volume:** Map `/volume1/Torrents/Youtube Downloads` → `/app/downloads`
+     - **Volume:** Map `/path/to/your/downloads` → `/app/downloads`
      - **Environment:** `FLASK_ENV=production`
 
 ## Usage
@@ -74,8 +106,12 @@ youtube-downloader/
 
 ### Volumes
 
-- `/app/downloads`: Where downloaded files are stored
-- Map this to `/volume1/Torrents/Youtube Downloads` on your Synology
+- `/app/downloads`: Where downloaded files are stored inside the container
+- Map this to your desired download directory on the host system:
+  - **Synology NAS:** `/volume1/docker/downloads/youtube`
+  - **Linux:** `/home/user/downloads/youtube`
+  - **Windows:** `C:\Downloads\YouTube`
+  - **macOS:** `/Users/username/Downloads/YouTube`
 
 ### Ports
 
@@ -94,27 +130,37 @@ youtube-downloader/
 ### Common Issues
 
 1. **Container won't start:**
+
    - Check logs: `sudo docker logs youtube-downloader`
    - Ensure port 7843 is not in use
 
 2. **Downloads fail:**
+
    - YouTube may have changed their API
    - Check container logs for yt-dlp errors
    - Try updating the container
 
 3. **Permission issues:**
    - Ensure the downloads directory is writable
-   - Check Synology folder permissions
+   - Check folder permissions on your host system
+   - On Linux/Synology: `chmod 755 /path/to/downloads`
 
 ### Updating
 
 To update to the latest version:
 
+**Docker Compose:**
+
 ```bash
-cd /volume1/docker/youtube-downloader/
-sudo docker-compose down
-sudo docker-compose up -d --build
+cd /path/to/youtube-downloader/
+docker-compose down
+docker-compose up -d --build
 ```
+
+**Portainer:**
+
+- Go to your stack and click **Editor**
+- Click **Update the stack** to rebuild with latest code
 
 ## Technical Details
 
