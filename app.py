@@ -171,8 +171,15 @@ def download_youtube_video(url, download_id, download_playlist=False):
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
+        # Ensure status is marked as completed after download finishes
+        if download_status[download_id]['status'] != 'error':
+            download_status[download_id]['status'] = 'completed'
+            download_status[download_id]['progress'] = 100
+            download_status[download_id]['log'].append("Download completed successfully!")
+
     except Exception as e:
         download_status[download_id]['status'] = 'error'
+        download_status[download_id]['progress'] = 0
         download_status[download_id]['log'].append(f"Error: {str(e)}")
 
 @app.route('/')

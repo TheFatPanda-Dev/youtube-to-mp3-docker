@@ -417,12 +417,19 @@
                 alert('Error: ' + error.message);
                 resetForm();
             });
-        }        function startStatusPolling() {
+        }
+
+        function startStatusPolling() {
             statusInterval = setInterval(() => {
                 if (!currentDownloadId) return;
 
                 fetch(`/status/${currentDownloadId}`)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     updateProgress(data);
 
@@ -432,13 +439,16 @@
                             document.getElementById('progressText').textContent = 'Download completed!';
                             loadFileList();
                         } else {
-                            document.getElementById('progressText').textContent = 'Download failed!';
+                            document.getElementById('progressText').textContent = 'Download failed! Check logs above.';
                         }
                         resetForm();
                     }
                 })
                 .catch(error => {
                     console.error('Status polling error:', error);
+                    clearInterval(statusInterval);
+                    document.getElementById('progressText').textContent = 'Connection lost. Check server.';
+                    resetForm();
                 });
             }, 1000);
         }
