@@ -392,20 +392,34 @@
             downloadBtn.textContent = downloadPlaylist ? 'Downloading Playlist...' : 'Starting Download...';
             progressContainer.style.display = 'block';
 
+            const requestData = {
+                url: url,
+                download_playlist: downloadPlaylist,
+                confirmed: true
+            };
+
+            console.log('Sending download request:', requestData);
+
             fetch('/download', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    url: url,
-                    download_playlist: downloadPlaylist
-                })
+                body: JSON.stringify(requestData)
             })
             .then(response => response.json())
             .then(data => {
+                console.log('Download response:', data);
+
                 if (data.error) {
                     alert('Error: ' + data.error);
+                    resetForm();
+                    return;
+                }
+
+                // Check if playlist was detected again (shouldn't happen with confirmed=true)
+                if (data.playlist_detected) {
+                    alert('ERROR: Playlist detected again despite confirmation. Please refresh the page.');
                     resetForm();
                     return;
                 }

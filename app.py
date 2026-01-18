@@ -43,11 +43,15 @@ def progress_hook(d, download_id):
         return
 
     if d['status'] == 'downloading':
+        # Update download progress
         if 'total_bytes' in d and d['total_bytes']:
             percent = (d['downloaded_bytes'] / d['total_bytes']) * 100
             download_status[download_id]['progress'] = round(percent, 1)
+        elif 'total_bytes_estimate' in d and d['total_bytes_estimate']:
+            percent = (d['downloaded_bytes'] / d['total_bytes_estimate']) * 100
+            download_status[download_id]['progress'] = round(percent, 1)
         elif '_percent_str' in d:
-            percent_str = d['_percent_str'].replace('%', '')
+            percent_str = d['_percent_str'].replace('%', '').strip()
             try:
                 download_status[download_id]['progress'] = float(percent_str)
             except:
@@ -61,38 +65,13 @@ def progress_hook(d, download_id):
             }
 
     elif d['status'] == 'finished':
-        download_status[download_id]['status'] = 'completed'
-        download_status[download_id]['progress'] = 100
-        download_status[download_id]['filename'] = os.path.basename(d['filename'])
+        # Video download finished, now converting to MP3
+        download_status[download_id]['progress'] = 95
+        download_status[download_id]['log'].append("Download finished, now converting to MP3...")
 
-def download_youtube_video(url, download_id):
-    try:
-        download_status[download_id] = {
-            'status': 'downloading',
-            'progress': 0,
-            'log': [],
-            'filename': None
-        }
-
-        # Force MP3-only download configuration
-        ydl_opts = {
-            'outtmpl': os.path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s'),
-            'logger': DownloadLogger(download_id),
-            'progress_hooks': [lambda d: progress_hook(d, download_id)],
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-        }
-
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-
-    except Exception as e:
+    elif d['status'] == 'error':
         download_status[download_id]['status'] = 'error'
-        download_status[download_id]['log'].append(f"Error: {str(e)}")
+        download_status[download_id]['log'].append("Error during download")
 
 def is_playlist(url):
     """Check if the URL is a YouTube playlist"""
@@ -132,41 +111,50 @@ def get_playlist_info(url):
 
 def download_youtube_video(url, download_id, download_playlist=False):
     try:
-        download_status[download_id] = {
-            'status': 'downloading',
-            'progress': 0,
-            'log': [],
-            'filename': None,
-            'is_playlist': False,
-            'playlist_progress': {'current': 0, 'total': 0}
-        }
+        # Status dict already initialized in /download route, just add to log
+        download_status[download_id]['log'].append("Starting yt-dlp download process...")
 
-        # Check if it's a playlist
-        if is_playlist(url):
+        # Check if it's a playlist and user wants single video
+        if is_playlist(url) and not download_playlist:
+            download_status[download_id]['log'].append("Extracting single video from playlist URL...")
+        elif is_playlist(url) and download_playlist:
             download_status[download_id]['is_playlist'] = True
-            if not download_playlist:
-                download_status[download_id]['status'] = 'playlist_detected'
-                download_status[download_id]['log'].append("Playlist detected. Please confirm if you want to download the entire playlist.")
-                return
+            download_status[download_id]['log'].append("Downloading entire playlist...")
+
+        # Post-processor hook for conversion progress
+        def postprocessor_hook(d):
+            if d['status'] == 'started':
+                download_status[download_id]['log'].append(f"Post-processing: {d.get('postprocessor', 'processing')}...")
+            elif d['status'] == 'finished':
+                download_status[download_id]['log'].append("Post-processing complete!")
 
         # Configure download options
         ydl_opts = {
             'logger': DownloadLogger(download_id),
             'progress_hooks': [lambda d: progress_hook(d, download_id)],
+            'postprocessor_hooks': [postprocessor_hook],
             'format': 'bestaudio/best',
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': '192',
             }],
+            'quiet': False,
+            'no_warnings': False,
         }
+
+        # If user wants single video from a playlist, don't download the whole playlist
+        if is_playlist(url) and not download_playlist:
+            ydl_opts['noplaylist'] = True
+            download_status[download_id]['log'].append("Option: noplaylist=True (single video only)")
 
         # Set output template based on playlist or single video
         if download_status[download_id]['is_playlist']:
             ydl_opts['outtmpl'] = os.path.join(DOWNLOAD_DIR, '%(playlist_title)s/%(title)s.%(ext)s')
-            download_status[download_id]['log'].append("Downloading playlist...")
         else:
             ydl_opts['outtmpl'] = os.path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s')
+
+        download_status[download_id]['log'].append("Connecting to YouTube...")
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
@@ -175,12 +163,12 @@ def download_youtube_video(url, download_id, download_playlist=False):
         if download_status[download_id]['status'] != 'error':
             download_status[download_id]['status'] = 'completed'
             download_status[download_id]['progress'] = 100
-            download_status[download_id]['log'].append("Download completed successfully!")
+            download_status[download_id]['log'].append("✓ Download completed successfully!")
 
     except Exception as e:
         download_status[download_id]['status'] = 'error'
         download_status[download_id]['progress'] = 0
-        download_status[download_id]['log'].append(f"Error: {str(e)}")
+        download_status[download_id]['log'].append(f"✗ Error: {str(e)}")
 
 @app.route('/')
 def index():
@@ -191,12 +179,16 @@ def download():
     data = request.json
     url = data.get('url')
     download_playlist = data.get('download_playlist', False)
+    confirmed = data.get('confirmed', False)
+
+    print(f"[DEBUG] Download request - URL: {url[:50]}..., playlist: {download_playlist}, confirmed: {confirmed}")
 
     if not url:
         return jsonify({'error': 'URL is required'}), 400
 
-    # Check if it's a playlist first
-    if is_playlist(url) and not download_playlist:
+    # Check if it's a playlist first (unless already confirmed by user)
+    if is_playlist(url) and not download_playlist and not confirmed:
+        print(f"[DEBUG] Playlist detected, asking for confirmation")
         playlist_info = get_playlist_info(url)
         if playlist_info['is_playlist']:
             return jsonify({
@@ -206,6 +198,18 @@ def download():
 
     # Generate unique download ID
     download_id = f"{int(time.time())}_{hash(url) % 10000}"
+
+    # Initialize status BEFORE starting thread (prevent race condition)
+    download_status[download_id] = {
+        'status': 'downloading',
+        'progress': 0,
+        'log': ['Initializing download...'],
+        'filename': None,
+        'is_playlist': False,
+        'playlist_progress': {'current': 0, 'total': 0}
+    }
+
+    print(f"[DEBUG] Starting download with ID: {download_id}")
 
     # Start download in background thread
     thread = threading.Thread(target=download_youtube_video, args=(url, download_id, download_playlist))
@@ -223,12 +227,20 @@ def check_playlist():
         return jsonify({'error': 'URL is required'}), 400
 
     playlist_info = get_playlist_info(url)
-    return jsonify(playlist_info)@app.route('/status/<download_id>')
+    return jsonify(playlist_info)
+
+@app.route('/status/<download_id>')
 def get_status(download_id):
+    print(f"[DEBUG] Status check for ID: {download_id}")
+    print(f"[DEBUG] Available IDs: {list(download_status.keys())}")
+
     if download_id not in download_status:
+        print(f"[DEBUG] Download ID not found!")
         return jsonify({'error': 'Download not found'}), 404
 
-    return jsonify(download_status[download_id])
+    status_data = download_status[download_id]
+    print(f"[DEBUG] Returning status: {status_data['status']}, progress: {status_data['progress']}")
+    return jsonify(status_data)
 
 @app.route('/downloads')
 def list_downloads():
