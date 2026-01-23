@@ -1,5 +1,7 @@
 # YouTube to MP3 Downloader Docker Container
 
+![YouTube to MP3 Downloader](youtube-downloader-screenshot.png)
+
 A web-based YouTube to MP3 downloader that runs in a Docker container, perfect for hosting on your Synology NAS.
 
 ## Features
