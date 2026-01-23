@@ -1,25 +1,11 @@
-version: '3.8'
-
 services:
   youtube-downloader:
-    image: python:3.11-slim
+    build: .
     container_name: youtube-downloader
-    working_dir: /app
-    command: >
-      bash -c "
-        apt-get update &&
-        apt-get install -y ffmpeg curl &&
-        pip install yt-dlp flask flask-cors &&
-        echo 'Starting Flask app on 0.0.0.0:5000...' &&
-        python app.py
-      "
     ports:
       - "7843:5000"
     volumes:
-      - /volume1/docker/youtube-downloader/app.py:/app/app.py:ro
-      - /volume1/docker/youtube-downloader/templates:/app/templates:ro
-      - /volume1/docker/youtube-downloader/static:/app/static:ro
-      - "/volume1/Torrents/Youtube Downloads:/app/downloads"
+      - ./downloads:/app/downloads
       - /etc/localtime:/etc/localtime:ro
     environment:
       - FLASK_ENV=production

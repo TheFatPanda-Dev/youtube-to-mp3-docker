@@ -26,7 +26,7 @@ git clone https://github.com/YOUR_USERNAME/youtube-downloader.git
 cd youtube-downloader
 
 # Start the container
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ### Method 2: Portainer Stack Deployment
@@ -37,7 +37,6 @@ docker-compose up -d --build
    - Paste the following stack configuration:
 
 ```yaml
-version: "3.8"
 services:
   youtube-downloader:
     build: .
@@ -153,8 +152,8 @@ To update to the latest version:
 
 ```bash
 cd /path/to/youtube-downloader/
-docker-compose down
-docker-compose up -d --build
+docker compose down
+docker compose up -d --build
 ```
 
 **Portainer:**
