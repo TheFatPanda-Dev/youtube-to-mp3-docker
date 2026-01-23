@@ -18,11 +18,9 @@ A web-based YouTube to MP3 downloader that runs in a Docker container, perfect f
 ### Method 1: Docker Compose (Recommended)
 
 ```bash
-# Create the download directory first
-mkdir -p "/path/to/your/downloads"
 
 # Clone or upload the project files
-git clone https://github.com/YOUR_USERNAME/youtube-downloader.git
+git clone https://github.com/TheFatPanda-Dev/youtube-to-mp3-docker.git
 cd youtube-downloader
 
 # Start the container
@@ -75,7 +73,7 @@ services:
 
 ## Usage
 
-1. Open the web interface in your browser
+1. Open your browser → http://localhost:7843/
 2. Paste a YouTube URL (video or playlist)
 3. If it's a playlist, choose to download single video or entire playlist
 4. Click "Download as MP3"
@@ -129,12 +127,10 @@ youtube-downloader/
 ### Common Issues
 
 1. **Container won't start:**
-
    - Check logs: `sudo docker logs youtube-downloader`
    - Ensure port 7843 is not in use
 
 2. **Downloads fail:**
-
    - YouTube may have changed their API
    - Check container logs for yt-dlp errors
    - Try updating the container
@@ -168,7 +164,3 @@ docker compose up -d --build
 - **Download Engine:** yt-dlp (more reliable than ytdl-core)
 - **Audio Processing:** ffmpeg
 - **Web Framework:** Flask with real-time progress updates
-
-## Support
-
-This container is designed to be simple and reliable. The web interface provides real-time feedback and error messages to help diagnose any issues.
