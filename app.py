@@ -92,6 +92,11 @@ def get_playlist_info(url):
         ydl_opts = {
             'quiet': True,
             'extract_flat': True,  # Don't download, just get info
+            'js_runtimes': {
+                'deno': {
+                    'path': '/root/.deno/bin/deno'
+                }
+            },
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -141,6 +146,11 @@ def download_youtube_video(url, download_id, download_playlist=False):
             }],
             'quiet': False,
             'no_warnings': False,
+            'js_runtimes': {
+                'deno': {
+                    'path': '/root/.deno/bin/deno'
+                }
+            },
         }
 
         # If user wants single video from a playlist, don't download the whole playlist

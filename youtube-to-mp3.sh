@@ -20,7 +20,7 @@ echo "URL: $URL"
 echo "Output directory: $OUTPUT_DIR"
 
 # Download with yt-dlp
-yt-dlp -x --audio-format mp3 \
+yt-dlp --js-runtimes deno:/root/.deno/bin/deno -x --audio-format mp3 \
     --audio-quality 0 \
     -o "$OUTPUT_DIR/%(title)s.%(ext)s" \
     --embed-metadata \

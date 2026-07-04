@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     nodejs \
     npm \
     curl \
+    zip \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -31,6 +32,8 @@ EXPOSE 5000
 # Set environment variables
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
+
+RUN curl -fsSL https://deno.land/install.sh | sh
 
 # Run the application
 CMD ["python", "app.py"]
